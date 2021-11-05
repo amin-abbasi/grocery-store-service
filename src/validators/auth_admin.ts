@@ -36,7 +36,7 @@ const exportResult = {
       password: Joi.string().min(6).max(32).required().description('User Password'),
       fullName: Joi.string().max(200).required().description('User Full Name'),
       role:     roleSchema.required(),
-      storeId:  objectId.required().description('Store ID'),
+      nodeId:   objectId.required().description('Node ID'),
     }),
     query: Joi.object({})
   }),
@@ -47,8 +47,7 @@ const exportResult = {
     query: Joi.object({
       size:  Joi.number().default(10).description('User List Pagination Size'),
       page:  Joi.number().default(1).description('User List Pagination Page'),
-      email: emailSchema,
-      role:  roleSchema,
+      descendants: Joi.boolean().default(false).description('Flag to show descendants nodes users'),
       fullName:  Joi.string().max(100).description('User Full Name'),
       sortType:  Joi.string().valid(...Object.keys(config.sortTypes)).description('Sort Type'),
       dateRange: Joi.object({

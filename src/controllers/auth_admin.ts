@@ -8,7 +8,7 @@ import { checkPermission } from '../services/methods'
 import * as JWT  from '../services/jwt'
 import * as User from '../models/user'
 
-const { admin, employee, manager } = config.roleTypes
+const { admin, manager } = config.roleTypes
 
 const exportResult = {
 
@@ -51,9 +51,8 @@ const exportResult = {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const body: User.IUser = req.body
-      const creator = req.user
-      if(creator.role === manager) {
-        const isOK = await checkPermission(creator.id, body.nodeId)
+      if(req.user.role === manager) {
+        const isOK = await checkPermission(req.user.id, body.nodeId)
         if(!isOK) throw Boom.forbidden('Manager can not add new user to given node.')
       }
       const user: any = await User.init(body)
@@ -67,8 +66,8 @@ const exportResult = {
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const query: User.IQueryData = req.query as User.IQueryData
-      const userId: string | undefined = (req.user.role === employee) ? req.user.id : undefined
-      const result = await User.list(query, userId)
+      const userId = (req.user.role !== admin) ? req.user.id : undefined
+      const result = await User.list(query, req.user.role, userId || 'admin')
       res.result = result
       next(res)
     }
@@ -78,9 +77,9 @@ const exportResult = {
   // Show User Profile
   async details(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId: string = req.params.userId
-      const user: any = await User.getByID(userId)
-      res.result = { ...user._doc }
+      const userId: string = req.params.userId, requesterId: string = req.user.id
+      const user = await User.getByID(userId)
+      res.result = user
       next(res)
     }
     catch (err) { next(err) }
@@ -90,8 +89,8 @@ const exportResult = {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.params.userId
-      const user: any = await User.updateById(userId, req.body)
-      res.result = { ...user._doc }
+      const user = await User.updateById(userId, req.body)
+      res.result = user
       next(res)
     }
     catch (err) { next(err) }
@@ -101,8 +100,8 @@ const exportResult = {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId: string = req.params.userId
-      const user: any = await User.archive(userId)
-      res.result = user._doc
+      const user = await User.archive(userId)
+      res.result = user
       next(res)
     }
     catch (err) { next(err) }

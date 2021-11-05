@@ -2,7 +2,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import Boom   from '@hapi/boom'
 import config from '../configs'
-import { comparePassword, hashPassword, mergeDeep } from '../services/methods'
+import { comparePassword, getNodeByUserID, hashPassword, mergeDeep } from '../services/methods'
 
 const updateOption = {
   new: true,
@@ -71,7 +71,7 @@ export async function listAll(): Promise<IUser[]> {
   return await User.find({ deletedAt: 0 })
 }
 
-export async function list(queryData: IQueryData, userId?: string): Promise<{ total: number, list: IUser[] }> {
+export async function list(queryData: IQueryData, role: string, userId: string): Promise<{ total: number, list: IUser[] }> {
   const { page, size, sortType, ...query } = queryData
   const setSize: number = (size > config.maxPageSize) ? config.maxPageSize : size
   const sortBy = (sortType && sortType !== config.sortTypes.date) ? { [config.sortTypes[sortType]]: 1 } : { createdAt: -1 }
@@ -84,13 +84,19 @@ export async function list(queryData: IQueryData, userId?: string): Promise<{ to
     delete query.dateRange
   }
   if(query.fullName) query.fullName = { '$regex': query.fullName, '$options': 'i' }
-  if(userId) query._id = { $ne: userId }
+  if(userId !== 'admin') query._id = { $ne: userId }
   query.deletedAt = 0
 
+  // Filter Descendants
+  if(role !== config.roleTypes.admin) {
+    const node = await getNodeByUserID(userId)
+    query.nodeId = { $in: query.descendants ? node.ancestors : [...node.children, node._id] }
+  }
+
   const options: mongoose.QueryOptions = {
-    limit: setSize,
-    skip: (page - 1) * setSize,
-    sort: sortBy
+    limit : setSize,
+    skip  : (page - 1) * setSize,
+    sort  : sortBy
   }
   const projection = { password: 0 }
 
@@ -115,7 +121,7 @@ export async function getBulkByEmails(emails: string[], mask: string): Promise<I
 }
 
 export async function getByID(userId: string, withPass?: boolean): Promise<IUser> {
-  const projection = withPass ? { password: 1 } : { password: 0 }
+  const projection = withPass ? {} : { password: 0 }
   const user: IUser | null = await User.findById(userId, projection)
   if(!user || user.deletedAt !== 0) throw Boom.notFound('User not found.')
   return user
@@ -131,12 +137,6 @@ export async function updateById(userId: string, data: IUserUpdate): Promise<IUs
   const user: IUser = await getByID(userId)
   const updatedUser: IUser = mergeDeep(user, data) as IUser
   return await User.findByIdAndUpdate(userId, updatedUser, updateOption) as IUser
-}
-
-export async function checkPassword(userId: string, password: string): Promise<boolean> {
-  const user: IUser = await getByID(userId, true)
-  const checked: boolean = comparePassword(password, user.password)
-  return checked
 }
 
 export async function changePassword(userId: string, oldPassword: string, newPassword: string): Promise<IUser> {

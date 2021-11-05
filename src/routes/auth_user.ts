@@ -11,9 +11,9 @@ const { employee, manager } = config.roleTypes
 
 // ---------------------------------- Define all routes in this microservice ----------------------------------
 
-router.route('/auth/login').post(Validator.login, Controller.login)
-router.route('/auth/refresh').put(Validator.refreshAccessToken, Controller.refreshAccessToken)
-router.route('/auth/logout').get(checkRole([employee, manager]), Validator.logout, Controller.logout)
+router.route('/login').post(Validator.login, Controller.login)
+router.route('/refresh').put(Validator.refreshAccessToken, Controller.refreshAccessToken)
+router.route('/logout').get(checkRole([employee, manager]), Validator.logout, Controller.logout)
 
 router.route('/profile').get(checkRole([employee, manager]), Validator.details, Controller.details)
 router.route('/profile').put(checkRole([employee, manager]), Validator.update, Controller.update)

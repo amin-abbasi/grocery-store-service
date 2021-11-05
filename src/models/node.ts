@@ -10,6 +10,7 @@ export interface INode extends Document {
   createdBy  : string
   managedBy  : string
   location   : string
+  ancestors  : string[]
   children   : string[]
   parent     : string | null
   createdAt? : number
@@ -31,8 +32,9 @@ const schema = new Schema({
   createdBy: { type: Schema.Types.String, required: true },
   managedBy: { type: Schema.Types.String, required: true },
   location:  { type: Schema.Types.String, required: true, trim: true },
-  children:  { type: [Schema.Types.ObjectId], default: [] },
-  parent:    { type: Schema.Types.ObjectId, ref: 'node' },
+  ancestors: { type: [Schema.Types.String], default: [] },
+  children:  { type: [Schema.Types.String], default: [] },
+  parent:    { type: Schema.Types.String, ref: 'node' },
   createdAt: { type: Schema.Types.Number },
   updatedAt: { type: Schema.Types.Number },
   deletedAt: { type: Schema.Types.Number, default: 0 },
@@ -54,6 +56,7 @@ export async function init(data: INode): Promise<INode> {
   let isMain: boolean = false, parentNodeId: string = ''
   const found = await Node.findOne({ parent: null })
   if(!found) {  // For the first Node in System
+    if(nodeData.parent) throw Boom.badData('Parent node is not allowed.')
     nodeData.createdBy = 'admin'
     nodeData.managedBy = 'admin'
     nodeData.parent = null
@@ -63,7 +66,8 @@ export async function init(data: INode): Promise<INode> {
     else {      // Check if parent id is valid
       parentNodeId = nodeData.parent
       const parentFound = await Node.findById(nodeData.parent)
-      if(!parentFound) throw Boom.badData('Invalid Parent Node.')
+      if(!parentFound) throw Boom.notFound('Parent node not found.')
+      nodeData.ancestors = [...parentFound.ancestors, parentNodeId]
     }
   }
 

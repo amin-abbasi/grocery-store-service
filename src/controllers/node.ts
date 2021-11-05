@@ -38,8 +38,8 @@ const exportResult = {
   async details(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const nodeId: string = req.params.nodeId
-      const node: any = await Node.getByID(nodeId)
-      res.result = { ...node._doc }
+      const node = await Node.getByID(nodeId)
+      res.result = node
       next(res)
     }
     catch (err) { next(err) }
@@ -50,8 +50,8 @@ const exportResult = {
     try {
       const nodeId = req.params.nodeId
       const managerId: string = req.user ? req.user.id : 'admin'
-      const node: any = await Node.updateById(nodeId, req.body, managerId)
-      res.result = { ...node._doc }
+      const node = await Node.updateById(nodeId, req.body, managerId)
+      res.result = node
       next(res)
     }
     catch (err) { next(err) }
@@ -62,8 +62,8 @@ const exportResult = {
     try {
       const nodeId: string = req.params.nodeId
       const managerId: string = req.user ? req.user.id : 'admin'
-      const node: any = await Node.archive(nodeId, managerId)
-      res.result = node._doc
+      const node = await Node.archive(nodeId, managerId)
+      res.result = node
       next(res)
     }
     catch (err) { next(err) }

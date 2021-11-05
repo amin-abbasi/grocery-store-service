@@ -5,6 +5,7 @@ import config from '../configs'
 import * as JWT from '../services/jwt'
 import * as User from '../models/user'
 import { IUserToken } from '../../types/express'
+import { comparePassword } from '../services/methods'
 
 const exportResult = {
 
@@ -15,8 +16,8 @@ const exportResult = {
       const user: User.IUser = await User.getByEmail(email)
 
       // Check Password
-      const checkPass = await User.checkPassword(user._id, password)
-      if(!checkPass) throw Boom.unauthorized('Invalid username or password.')
+      const checked: boolean = comparePassword(password, user.password)
+      if(!checked) throw Boom.unauthorized('Invalid username or password.')
 
       // Set JWT Access Token in Header & Refresh Token
       const tokenData = {
@@ -29,7 +30,9 @@ const exportResult = {
       res.header('authorization', token)
       res.header('refresh_token', refreshToken)
 
-      res.result = user
+      const result = { ...(user as any) }
+      delete result._doc.password
+      res.result = result._doc
       next(res)
     } catch (err) { next(err) }
   },

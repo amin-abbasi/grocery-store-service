@@ -80,3 +80,14 @@ export async function checkPermission(creatorId: string, nodeId: string): Promis
   if(nodeId === creator.nodeId || node.children.includes(nodeId)) return true
   return false
 }
+
+export async function getNodeByUserID(userId: string): Promise<Node.INode> {
+  const user = await User.getByID(userId)
+  return await Node.getByID(user.nodeId)
+}
+
+// export async function getDescendants(userId: string): Promise<string[]> {
+//   const user = await User.getByID(userId)
+//   const descendants = await Node.getDescendants(user.nodeId)
+//   return descendants.map(item => item._id as string)
+// }
