@@ -12,7 +12,9 @@ const exportResult = {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const body: Node.INode = req.body
-      body.createdBy = req.user ? req.user.id : 'admin'
+      const actorId = req.user ? req.user.id : 'admin'
+      body.createdBy = actorId
+      body.managedBy = actorId
       const node = await Node.init(body)
       res.result = node
       next(res)
@@ -47,7 +49,8 @@ const exportResult = {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const nodeId = req.params.nodeId
-      const node: any = await Node.updateById(nodeId, req.body)
+      const managerId: string = req.user ? req.user.id : 'admin'
+      const node: any = await Node.updateById(nodeId, req.body, managerId)
       res.result = { ...node._doc }
       next(res)
     }
@@ -58,7 +61,8 @@ const exportResult = {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const nodeId: string = req.params.nodeId
-      const node: any = await Node.archive(nodeId)
+      const managerId: string = req.user ? req.user.id : 'admin'
+      const node: any = await Node.archive(nodeId, managerId)
       res.result = node._doc
       next(res)
     }

@@ -2,7 +2,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 import Boom   from '@hapi/boom'
 import config from '../configs'
-import { mergeDeep } from '../services/methods'
+import { mergeDeep, setUniqueArray } from '../services/methods'
 
 export interface INode extends Document {
   name : string
@@ -51,15 +51,37 @@ export async function init(data: INode): Promise<INode> {
     createdAt : new Date().getTime()
   }
 
-  // For the first Node in System
-  const count = await Node.countDocuments()
-  if(count === 0) {
+  let isMain: boolean = false, parentNodeId: string = ''
+  const found = await Node.findOne({ parent: null })
+  if(!found) {  // For the first Node in System
     nodeData.createdBy = 'admin'
     nodeData.managedBy = 'admin'
     nodeData.parent = null
+    isMain = true
+  } else {      // Check to have just one Ancestor Node
+    if(!nodeData.parent) throw Boom.badData('Parent node is required.')
+    else {      // Check if parent id is valid
+      parentNodeId = nodeData.parent
+      const parentFound = await Node.findById(nodeData.parent)
+      if(!parentFound) throw Boom.badData('Invalid Parent Node.')
+    }
   }
 
-  return await Node.create(nodeData)
+  const node = await Node.create(nodeData)
+  if(!isMain) await addChild(parentNodeId, node._id)
+  return node
+}
+
+async function addChild(nodeId: string, childId: string): Promise<INode> {
+  const node = await getByID(nodeId)
+  node.children = setUniqueArray([...node.children, childId])
+  return await Node.findByIdAndUpdate(nodeId, node, { new: true }) as INode
+}
+
+async function removeChild(nodeId: string, childId: string): Promise<INode> {
+  const node = await getByID(nodeId)
+  node.children = node.children.filter(child => child !== childId)
+  return await Node.findByIdAndUpdate(nodeId, node, { new: true }) as INode
 }
 
 export interface IQueryData {
@@ -122,14 +144,20 @@ export async function getByName(name: string): Promise<INode> {
   return node
 }
 
-export async function updateById(nodeId: string, data: INodeUpdate): Promise<INode> {
+export async function updateById(nodeId: string, data: INodeUpdate, managerId: string): Promise<INode> {
   const node: INode = await getByID(nodeId)
+  if(node.managedBy !== managerId && node.createdBy !== managerId)
+    throw Boom.forbidden('Manager does not have access to update this node.')
   const updatedNode: INode = mergeDeep(node, data) as INode
   return await Node.findByIdAndUpdate(nodeId, updatedNode, { new: true }) as INode
 }
 
-export async function archive(nodeId: string): Promise<INode> {
+export async function archive(nodeId: string, managerId: string): Promise<INode> {
   const node: INode = await getByID(nodeId)
+  if(node.managedBy !== managerId && node.createdBy !== managerId)
+    throw Boom.forbidden('Manager does not have access to update this node.')
+  if(node.children.length > 0) throw Boom.methodNotAllowed('Can not delete node as it has children.')
+  await removeChild(node.parent as string, node._id)
   return await Node.findByIdAndUpdate(node._id, { deletedAt: new Date().getTime() }, { new: true }) as INode
 }
 

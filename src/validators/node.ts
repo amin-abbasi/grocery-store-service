@@ -37,7 +37,7 @@ const exportResult = {
   // Show Node Details
   details: validate({
     params: Joi.object({
-      storeId: objectId.required().description('Node ID'),
+      nodeId: objectId.required().description('Node ID'),
     }),
     query: Joi.object({})
   }),
@@ -45,11 +45,10 @@ const exportResult = {
   // Update Node
   update: validate({
     params: Joi.object({
-      storeId: objectId.required().description('Node ID'),
+      nodeId: objectId.required().description('Node ID'),
     }),
     body: Joi.object({
       name: Joi.string().max(200).description('Node Name'),
-
     }),
     query: Joi.object({})
   }),
@@ -57,7 +56,7 @@ const exportResult = {
   // Delete Node [Soft delete]
   delete: validate({
     params: Joi.object({
-      storeId: objectId.required().description('Node ID'),
+      nodeId: objectId.required().description('Node ID'),
     }),
     query: Joi.object({})
   }),
