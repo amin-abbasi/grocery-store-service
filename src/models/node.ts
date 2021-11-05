@@ -10,9 +10,12 @@ export interface INode extends Document {
   createdBy  : string
   managedBy  : string
   location   : string
-  ancestors  : string[]
-  children   : string[]
-  parent     : string | null
+
+  descendants : string[]
+  ancestors   : string[]
+  children    : string[]
+  parent      : string | null
+
   createdAt? : number
   updatedAt? : number
   deletedAt? : number
@@ -32,9 +35,12 @@ const schema = new Schema({
   createdBy: { type: Schema.Types.String, required: true },
   managedBy: { type: Schema.Types.String, required: true },
   location:  { type: Schema.Types.String, required: true, trim: true },
-  ancestors: { type: [Schema.Types.String], default: [] },
-  children:  { type: [Schema.Types.String], default: [] },
-  parent:    { type: Schema.Types.String, ref: 'node' },
+
+  ancestors:   { type: [Schema.Types.String], default: [] },
+  descendants: { type: [Schema.Types.String], default: [] },
+  children:    { type: [Schema.Types.String], default: [] },
+  parent:      { type: Schema.Types.String, ref: 'node' },
+
   createdAt: { type: Schema.Types.Number },
   updatedAt: { type: Schema.Types.Number },
   deletedAt: { type: Schema.Types.Number, default: 0 },
@@ -56,7 +62,7 @@ export async function init(data: INode): Promise<INode> {
   let isMain: boolean = false, parentNodeId: string = ''
   const found = await Node.findOne({ parent: null })
   if(!found) {  // For the first Node in System
-    if(nodeData.parent) throw Boom.badData('Parent node is not allowed.')
+    if(nodeData.parent) throw Boom.badData('Parent node is not allowed for the first node.')
     nodeData.createdBy = 'admin'
     nodeData.managedBy = 'admin'
     nodeData.parent = null
@@ -72,7 +78,10 @@ export async function init(data: INode): Promise<INode> {
   }
 
   const node = await Node.create(nodeData)
-  if(!isMain) await addChild(parentNodeId, node._id)
+  if(!isMain) {
+    await addChild(parentNodeId, node._id)
+    await addDescendant(node.ancestors, node._id)
+  }
   return node
 }
 
@@ -86,6 +95,16 @@ async function removeChild(nodeId: string, childId: string): Promise<INode> {
   const node = await getByID(nodeId)
   node.children = node.children.filter(child => child !== childId)
   return await Node.findByIdAndUpdate(nodeId, node, { new: true }) as INode
+}
+
+async function addDescendant(ancestors: string[], nodeId: string) {
+  const bulkUpdate = await Node.bulkWrite([{
+    updateMany : {
+      filter : { _id: { $in: ancestors } },
+      update : { '$addToSet': { descendants: nodeId.toString() } },
+    }
+  }])
+  return bulkUpdate
 }
 
 export interface IQueryData {

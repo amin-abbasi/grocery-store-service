@@ -4,6 +4,8 @@ import Boom   from '@hapi/boom'
 import config from '../configs'
 import { comparePassword, getNodeByUserID, hashPassword, mergeDeep } from '../services/methods'
 
+const { admin, employee } = config.roleTypes
+
 const updateOption = {
   new: true,
   projection: {
@@ -88,10 +90,18 @@ export async function list(queryData: IQueryData, role: string, userId: string):
   query.deletedAt = 0
 
   // Filter Descendants
-  if(role !== config.roleTypes.admin) {
+  if(role !== admin) {
     const node = await getNodeByUserID(userId)
-    query.nodeId = { $in: query.descendants ? node.ancestors : [...node.children, node._id] }
+    console.log(node)
+
+    if(node.parent) {
+      if(query.descendants) query.nodeId = { $in: node.descendants }
+      else query.nodeId = node._id.toString()
+    }
+    delete query.descendants
   }
+  if(role === employee) query.role = employee
+  console.log(query)
 
   const options: mongoose.QueryOptions = {
     limit : setSize,
