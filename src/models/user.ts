@@ -92,16 +92,14 @@ export async function list(queryData: IQueryData, role: string, userId: string):
   // Filter Descendants
   if(role !== admin) {
     const node = await getNodeByUserID(userId)
-    console.log(node)
 
     if(node.parent) {
-      if(query.descendants) query.nodeId = { $in: node.descendants }
+      if(query.descendants) query.nodeId = { $in: [...node.descendants, node._id.toString()] }
       else query.nodeId = node._id.toString()
     }
     delete query.descendants
   }
   if(role === employee) query.role = employee
-  console.log(query)
 
   const options: mongoose.QueryOptions = {
     limit : setSize,
