@@ -1,0 +1,24 @@
+stages:
+  - build
+  - check
+
+##Production(master-docker-compose)
+building:
+    stage: build
+    script:
+        - docker-compose -f ./.docker/docker-compose.yml up -d --build --force-recreate grocery-store
+    tags:
+        - run_trader
+    only:
+        refs:
+            - develop
+checking:
+    stage: check
+    script:
+        - docker-compose -f ./.docker/docker-compose.yml logs grocery-store
+        - docker-compose -f ./.docker/docker-compose.yml ps --services --filter "status=running" | grep "grocery-store"
+    tags:
+        - check_trader
+    only:
+        refs:
+            - develop

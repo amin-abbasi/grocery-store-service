@@ -1,0 +1,53 @@
+version: "3.7"
+
+services:
+  grocery-store-app:
+    build:
+      context: ../
+      dockerfile: ./.docker/node.dockerfile
+    image: grocery-store-app
+    container_name: grocery-store-app
+    restart: unless-stopped
+    working_dir: /usr/src
+    env_file: ../.env
+    ports:
+      - 4000:4000
+    volumes:
+      - grocery-store-log-volume:/usr/src/services
+    networks:
+      - grocery-store-network
+    stdin_open: true
+    tty: true
+
+  grocery-store-mongo-db:
+    image: mongo:latest
+    container_name: grocery-store-mongo-db
+    restart: always
+    volumes:
+      - grocery-store-mongo-db-volume:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    networks:
+      - grocery-store-network
+    env_file:
+      - ../.env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+
+  grocery-store-redis:
+    image: "redis:latest"
+    container_name: grocery-store-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASS}
+    networks:
+      - grocery-store-network
+
+networks:
+  grocery-store-network:
+    external:
+      name: grocery-store-network
+
+volumes:
+  grocery-store-log-volume:
+  grocery-store-mongo-db-volume:
