@@ -14,8 +14,8 @@
     "url": "git+https://github.com/amin4193/grocery-store-service.git"
   },
   "keywords": [
-    "typescript",
-    "gateway"
+    "grocery-store",
+    "service"
   ],
   "author": "AAH",
   "license": "ISC",
