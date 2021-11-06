@@ -9,7 +9,8 @@ services:
     container_name: grocery-store-app
     restart: unless-stopped
     working_dir: /usr/src
-    env_file: ../.env
+    env_file:
+      - .env
     ports:
       - 4000:4000
     volumes:
@@ -29,17 +30,23 @@ services:
     networks:
       - grocery-store-network
     env_file:
-      - ../.env
+      - .env
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_PASS}
       MONGO_INITDB_DATABASE: ${DB_NAME}
 
   grocery-store-redis:
-    image: "redis:latest"
+    image: redis:latest
     container_name: grocery-store-redis
     restart: always
+    env_file:
+      - .env
     command: redis-server --requirepass ${REDIS_PASS}
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    # volumes:
+    #   - "${REDIS_PASS}/grocery-store-redis:/bitnami/redis"
     networks:
       - grocery-store-network
 

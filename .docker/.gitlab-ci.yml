@@ -8,17 +8,17 @@ building:
     script:
         - docker-compose -f ./.docker/docker-compose.yml up -d --build --force-recreate grocery-store
     tags:
-        - run_trader
+        - run_store
     only:
         refs:
-            - develop
+            - master
 checking:
     stage: check
     script:
         - docker-compose -f ./.docker/docker-compose.yml logs grocery-store
         - docker-compose -f ./.docker/docker-compose.yml ps --services --filter "status=running" | grep "grocery-store"
     tags:
-        - check_trader
+        - check_store
     only:
         refs:
-            - develop
+            - master
