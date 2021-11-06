@@ -77,7 +77,8 @@ export async function getUsersBulk(userIds: string[], mask: string): Promise<Use
 export async function checkPermission(creatorId: string, nodeId: string): Promise<boolean> {
   const creator = await User.getByID(creatorId)
   const node = await Node.getByID(creator.nodeId)
-  if(nodeId === creator.nodeId || node.children.includes(nodeId)) return true
+  const list = [ ...node.descendants, creator.nodeId ]
+  if(list.includes(nodeId)) return true
   return false
 }
 

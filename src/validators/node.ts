@@ -14,7 +14,6 @@ const exportResult = {
       type: Joi.string().valid(...Object.keys(config.nodeTypes)).required().description('Node Type'),
       location:  Joi.string().max(200).description('Node Location'),
       parent:    objectId.description('Parent Node ID'),
-      children:  Joi.array().items(objectId).single().description('Array of Sub Node IDs'),
       managedBy: Joi.string().max(200).description('Node Manager ID'),
     }),
     query: Joi.object({})

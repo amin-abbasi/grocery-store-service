@@ -63,8 +63,6 @@ export async function init(data: INode): Promise<INode> {
   const found = await Node.findOne({ parent: null })
   if(!found) {  // For the first Node in System
     if(nodeData.parent) throw Boom.badData('Parent node is not allowed for the first node.')
-    nodeData.createdBy = 'admin'
-    nodeData.managedBy = 'admin'
     nodeData.parent = null
     isMain = true
   } else {      // Check to have just one Ancestor Node
@@ -169,16 +167,12 @@ export async function getByName(name: string): Promise<INode> {
 
 export async function updateById(nodeId: string, data: INodeUpdate, managerId: string): Promise<INode> {
   const node: INode = await getByID(nodeId)
-  if(node.managedBy !== managerId && node.createdBy !== managerId)
-    throw Boom.forbidden('Manager does not have access to update this node.')
   const updatedNode: INode = mergeDeep(node, data) as INode
   return await Node.findByIdAndUpdate(nodeId, updatedNode, { new: true }) as INode
 }
 
 export async function archive(nodeId: string, managerId: string): Promise<INode> {
   const node: INode = await getByID(nodeId)
-  if(node.managedBy !== managerId && node.createdBy !== managerId)
-    throw Boom.forbidden('Manager does not have access to update this node.')
   if(node.children.length > 0) throw Boom.methodNotAllowed('Can not delete node as it has children.')
   await removeChild(node.parent as string, node._id)
   return await Node.findByIdAndUpdate(node._id, { deletedAt: new Date().getTime() }, { new: true }) as INode

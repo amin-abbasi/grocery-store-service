@@ -92,11 +92,8 @@ export async function list(queryData: IQueryData, role: string, userId: string):
   // Filter Descendants
   if(role !== admin) {
     const node = await getNodeByUserID(userId)
-
-    if(node.parent) {
-      if(query.descendants) query.nodeId = { $in: [...node.descendants, node._id.toString()] }
-      else query.nodeId = node._id.toString()
-    }
+    const nodeId = node._id.toString()
+    query.nodeId = query.descendants ? { $in: [...node.descendants, nodeId] } : nodeId
     delete query.descendants
   }
   if(role === employee) query.role = employee

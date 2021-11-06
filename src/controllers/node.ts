@@ -3,18 +3,24 @@ import { Request, Response, NextFunction } from 'express'
 import Boom   from '@hapi/boom'
 import config from '../configs'
 import * as Node from '../models/node'
+import { checkPermission } from '../services/methods'
 
-const { admin, employee, manager } = config.roleTypes
+const { manager } = config.roleTypes
 
 const exportResult = {
 
   // Create new Node
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const body: Node.INode = req.body
-      const actorId = req.user ? req.user.id : 'admin'
+      const body: Node.INode = req.body, user = req.user
+      const actorId = user ? user.id : 'admin'
       body.createdBy = actorId
       body.managedBy = actorId
+
+      if(body.parent && user.role === manager) {
+        const check = await checkPermission(user.id, body.parent)
+        if(!check) throw Boom.forbidden('Manager can not create node outside his descendants.')
+      }
       const node = await Node.init(body)
       res.result = node
       next(res)
@@ -48,8 +54,14 @@ const exportResult = {
   // Update Node Profile
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const nodeId = req.params.nodeId
-      const managerId: string = req.user ? req.user.id : 'admin'
+      const nodeId = req.params.nodeId, user = req.user
+      const managerId: string = user ? user.id : 'admin'
+
+      if(user.role === manager) {
+        const check = await checkPermission(user.id, nodeId)
+        if(!check) throw Boom.forbidden('Manager can not update node outside his descendants.')
+      }
+
       const node = await Node.updateById(nodeId, req.body, managerId)
       res.result = node
       next(res)
@@ -60,8 +72,14 @@ const exportResult = {
   // Delete Node [Soft delete]
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const nodeId: string = req.params.nodeId
-      const managerId: string = req.user ? req.user.id : 'admin'
+      const nodeId: string = req.params.nodeId, user = req.user
+      const managerId: string = user ? user.id : 'admin'
+
+      if(user.role === manager) {
+        const check = await checkPermission(user.id, nodeId)
+        if(!check) throw Boom.forbidden('Manager can not delete node outside his descendants.')
+      }
+
       const node = await Node.archive(nodeId, managerId)
       res.result = node
       next(res)

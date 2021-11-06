@@ -77,8 +77,12 @@ const exportResult = {
   // Show User Profile
   async details(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId: string = req.params.userId, requesterId: string = req.user.id
+      const userId: string = req.params.userId
       const user = await User.getByID(userId)
+
+      const isOK = await checkPermission(req.user.id, user.nodeId)
+      if(!isOK) throw Boom.forbidden('Requester does not have permission to see this user.')
+
       res.result = user
       next(res)
     }
@@ -89,6 +93,13 @@ const exportResult = {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.params.userId
+
+      if(req.user.role === manager) {
+        const user = await User.getByID(userId)
+        const isOK = await checkPermission(req.user.id, user.nodeId)
+        if(!isOK) throw Boom.forbidden('Manager can not add new user to given node.')
+      }
+
       const user = await User.updateById(userId, req.body)
       res.result = user
       next(res)
@@ -100,6 +111,13 @@ const exportResult = {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId: string = req.params.userId
+
+      if(req.user.role === manager) {
+        const user = await User.getByID(userId)
+        const isOK = await checkPermission(req.user.id, user.nodeId)
+        if(!isOK) throw Boom.forbidden('Manager can not add new user to given node.')
+      }
+
       const user = await User.archive(userId)
       res.result = user
       next(res)
