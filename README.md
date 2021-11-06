@@ -74,7 +74,8 @@ You should run each entity separately to avoid conflict between entities relatio
 npm run test -- __tests__/node.test.js
 ```
 
-### Note: After development and test, you should put the following script in `.gitignore` file to prevent pushing tests files in production mode repositories:
+### Note3:
+After development and test, you should put the following script in `.gitignore` file to prevent pushing tests files in production mode repositories:
 
 ```
 # test folder
@@ -82,7 +83,7 @@ __tests__
 ```
 
 ## Docker and Deployment
-You can simply set your own configs in `docker-compose.yml` file and run:
+There is a folder `.docker` to handle containerizaton prerequisits such as `.dockerfile`, `docker-compose`, and `.env` file for it. You can simply go to `.docker` folder and set your own configs in `docker-compose.yml` file and run:
 
 ```
 sudo docker-compose up --build
