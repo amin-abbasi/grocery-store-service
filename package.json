@@ -51,6 +51,8 @@
     "@types/node": "16.11.6",
     "@types/redis": "2.8.32",
     "jest": "27.3.1",
-    "supertest": "6.1.6"
+    "supertest": "6.1.6",
+    "ts-jest": "27.0.7",
+    "typescript": "4.4.4"
   }
 }
