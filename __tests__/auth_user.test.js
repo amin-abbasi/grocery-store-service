@@ -1,8 +1,7 @@
 const supertest = require('supertest')
 const config = require('../src/configs')
 const server = require('../src/app')
-const create_user_body = require('./body_samples/create.users.json')
-const login_admin_body = require('./body_samples/login.admin.json')
+const login_user_body = require('./body_samples/login.users.json')
 
 jest.setTimeout(60000)
 // jest.mock('../__mocks__/users.js')
@@ -14,7 +13,7 @@ const {
   DB_HOST,
   DB_PORT
 } = config.default.env
-const url = `${SERVER_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}/api/v1/admin`
+const url = `${SERVER_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}/api/v1/users`
 
 // ---------------------------------- MongoDB ----------------------------------------
 // const mongoose = require('mongoose')
@@ -27,17 +26,18 @@ const url = `${SERVER_PROTOCOL}://${SERVER_HOST}:${SERVER_PORT}/api/v1/admin`
 //   disconnect: function(done) { mongoose.disconnect(done) },
 // }
 
-let userId = '', token = ''
+let userId = '', token = '', refreshToken = ''
 const request = supertest(url)
 
 describe('User Worker', function() {
   // beforeAll(function() { mongoDB.connect() })
   // afterAll(function(done) { mongoDB.disconnect(done) })
 
-  // Admin Login
-  test('should login to admin account', async function(done) {
-    const res = await request.post('/login').send(login_admin_body)
+  // User Login
+  test('should login to user account', async function(done) {
+    const res = await request.post('/login').send(login_user_body)
     token = res.headers['authorization']
+    refreshToken = res.headers['refresh_token']
     const response = JSON.parse(res.text)
     expect(response.statusCode).toBe(200)
     expect(response.success).toBe(true)
@@ -46,11 +46,12 @@ describe('User Worker', function() {
     done()
   })
 
-  // Create Users
-  test('should create a user', async function(done) {
-    const res = await request.post('/users').send(create_user_body).set('authorization', token)
+  // User Profile Details
+  test('should show a user profile', async function(done) {
+    const res = await request.get('/profile').set('authorization', token)
     const response = JSON.parse(res.text)
     userId = response.result._id
+    expect(userId).toBeTruthy()
     expect(response.statusCode).toBe(200)
     expect(response.success).toBe(true)
     expect(response.result).toBeTruthy()
@@ -58,32 +59,10 @@ describe('User Worker', function() {
     done()
   })
 
-  // List of Users
-  test('should get list of users', async function(done) {
-    const res = await request.get('/users').set('authorization', token)
-    const response = JSON.parse(res.text)
-    expect(response.statusCode).toBe(200)
-    expect(response.success).toBe(true)
-    expect(response.result).toBeTruthy()
-    expect(response.result).toMatchSnapshot()
-    done()
-  })
-
-  // User Details
-  test('should get user details', async function(done) {
-    const res = await request.get('/users/' + userId).set('authorization', token)
-    const response = JSON.parse(res.text)
-    expect(response.statusCode).toBe(200)
-    expect(response.success).toBe(true)
-    expect(response.result).toBeTruthy()
-    expect(response.result).toMatchSnapshot()
-    done()
-  })
-
-  // Update User
+  // Update User Profile
   const updateData = { fullName: 'Changed Name' } // Some data to update
-  test('should get user details', async function(done) {
-    const res = await request.put('/users/' + userId).send(updateData).set('authorization', token)
+  test('should update user profile', async function(done) {
+    const res = await request.put('/profile').send(updateData).set('authorization', token)
     const response = JSON.parse(res.text)
     expect(response.statusCode).toBe(200)
     expect(response.success).toBe(true)
@@ -93,9 +72,26 @@ describe('User Worker', function() {
     done()
   })
 
-  // Delete a User
-  test('should delete a user', async function(done) {
-    const res = await request.del('/users/' + userId).set('authorization', token)
+  // Change User Password
+  const updatePassData = { password: '12345678' }
+  test('should change user password', async function(done) {
+    const res = await request.put('/profile').send(updateData).set('authorization', token)
+    const response = JSON.parse(res.text)
+    expect(response.statusCode).toBe(200)
+    expect(response.success).toBe(true)
+    expect(response.result).toBeTruthy()
+    expect(response.result.fullName).toBe(updateData.fullName)
+    expect(response.result).toMatchSnapshot()
+    done()
+  })
+
+  // User Login Again!! because change password will revoke the token
+  test('should login to user account', async function(done) {
+    const res = await request.post('/login').send({
+      email: login_user_body.email,
+      password: updatePassData.password // Login with new password
+    })
+    token = res.headers['authorization']
     const response = JSON.parse(res.text)
     expect(response.statusCode).toBe(200)
     expect(response.success).toBe(true)
@@ -104,8 +100,22 @@ describe('User Worker', function() {
     done()
   })
 
-  // Admin Logout
-  test('should logout from admin account', async function(done) {
+  // Refresh User Token
+  test('should refresh user token', async function(done) {
+    const res = await request.put('/refresh')
+      .set('authorization', token)
+      .set('refresh_token', refreshToken)
+    const response = JSON.parse(res.text)
+    expect(response.statusCode).toBe(200)
+    expect(response.success).toBe(true)
+    expect(response.result).toBeTruthy()
+    expect(response.result.fullName).toBe(updateData.fullName)
+    expect(response.result).toMatchSnapshot()
+    done()
+  })
+
+  // User Logout
+  test('should logout from user account', async function(done) {
     const res = await request.get('/logout').set('authorization', token)
     const response = JSON.parse(res.text)
     expect(response.statusCode).toBe(200)
