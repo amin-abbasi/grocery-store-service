@@ -75,6 +75,9 @@ npm run test -- __tests__/node.test.js
 ```
 
 ### Note3:
+For tests to run correctly, you need to respectively run the tests for "node", "auth_admin", and then "auth_user", as they are dependent to each others results.
+
+### Note4:
 After development and test, you should put the following script in `.gitignore` file to prevent pushing tests files in production mode repositories:
 
 ```
@@ -83,7 +86,7 @@ __tests__
 ```
 
 ## Docker and Deployment
-There is a folder `.docker` to handle containerizaton prerequisits such as `.dockerfile`, `docker-compose`, and `.env` file for it. You can simply go to `.docker` folder and set your own configs in `docker-compose.yml` file and run:
+There is a folder `.docker` to handle containerization prerequisites such as `.dockerfile`, `docker-compose`, and `.env` file for it. You can simply go to `.docker` folder and set your own configs in `docker-compose.yml` file and run:
 
 ```
 sudo docker-compose up --build
